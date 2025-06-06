@@ -3,6 +3,7 @@ import os
 import sqlite3
 import datetime
 import webbrowser
+import tempfile
 from tkinter import Tk, Frame, Label, Entry, Listbox, Scrollbar, Button, StringVar, END, SINGLE, Toplevel, Text
 
 DB_NAME = "snippets.db"
@@ -151,9 +152,9 @@ class SnippetGUI(Tk):
         Button(win, text="Save", command=lambda: self.save_snippet(lang_var.get(), txt.get("1.0", END), win)).pack()
 
     def save_snippet(self, lang, text, window):
-        temp_path = os.path.join("/tmp", "snippet.txt")
-        with open(temp_path, "w", encoding="utf-8") as f:
-            f.write(text)
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt", encoding="utf-8") as tmp:
+            tmp.write(text)
+            temp_path = tmp.name
         try:
             add_snippet(lang, temp_path)
             window.destroy()
