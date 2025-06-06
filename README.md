@@ -33,6 +33,18 @@ Launch the GUI:
 python snippet_manager.py gui
 ```
 
+### GUI Features
+
+The search results list shows each snippet's language and title. Every row also
+includes **Open**, **Copy**, and **Explore** buttons:
+
+- **Open** opens the snippet inside the application where it can be edited.
+- **Copy** copies the snippet text to your clipboard.
+- **Explore** opens the folder containing the snippet file in your system's file explorer.
+
+When a snippet is opened, a text area allows editing. Use **Save** to persist
+changes or **Copy to clipboard** and **Close** to exit.
+
 ## Snippet Format
 
 The first comment line is the title and the second (optional) line is the description. Comment prefixes depend on the language. For example, SQL snippets start lines with `--` while C# uses `//`.
