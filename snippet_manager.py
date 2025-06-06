@@ -9,14 +9,13 @@ from tkinter import (
     Frame,
     Label,
     Entry,
-    Listbox,
     Scrollbar,
     Button,
     StringVar,
     END,
-    SINGLE,
     Toplevel,
     Text,
+    Canvas,
 )
 
 DB_NAME = "snippets.db"
@@ -135,11 +134,22 @@ class SnippetGUI(Tk):
         frame.pack(fill="both", expand=True)
         scrollbar = Scrollbar(frame)
         scrollbar.pack(side="right", fill="y")
-        self.listbox = Listbox(frame, selectmode=SINGLE)
-        self.listbox.pack(fill="both", expand=True)
-        self.listbox.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.listbox.yview)
-        self.listbox.bind("<Double-Button-1>", self.open_selected)
+
+        self.canvas = Canvas(frame, yscrollcommand=scrollbar.set)
+        self.canvas.pack(fill="both", expand=True, side="left")
+        scrollbar.config(command=self.canvas.yview)
+
+        self.list_container = Frame(self.canvas)
+        self.canvas.create_window((0, 0), window=self.list_container, anchor="nw")
+        self.list_container.bind(
+            "<Configure>",
+            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")),
+        )
+
+        headers = Frame(self.list_container)
+        headers.pack(fill="x")
+        Label(headers, text="Language", width=15, anchor="w").grid(row=0, column=0)
+        Label(headers, text="Title", anchor="w").grid(row=0, column=1, sticky="w")
 
     def refresh_languages(self):
         conn = sqlite3.connect(DB_NAME)
@@ -153,18 +163,17 @@ class SnippetGUI(Tk):
     def on_search(self):
         lang = self.language_var.get()
         query = self.query_var.get()
-        self.listbox.delete(0, END)
-        for title, desc, path in search_snippets(lang, query):
-            display = title if not desc else f"{title} - {desc}"
-            self.listbox.insert(END, f"{display}||{path}")
+        for child in list(self.list_container.children.values())[1:]:
+            child.destroy()
 
-    def open_selected(self, event=None):
-        selection = self.listbox.curselection()
-        if not selection:
-            return
-        item = self.listbox.get(selection[0])
-        _, path = item.split("||", 1)
-        webbrowser.open(f"file://{os.path.abspath(path)}")
+        for title, _desc, path in search_snippets(lang, query):
+            row = Frame(self.list_container)
+            row.pack(fill="x", pady=2)
+            Label(row, text=lang, width=15, anchor="w").grid(row=0, column=0, sticky="w")
+            Label(row, text=title, anchor="w").grid(row=0, column=1, sticky="w")
+            Button(row, text="Open", command=lambda p=path: self.open_snippet(p)).grid(row=0, column=2, padx=2)
+            Button(row, text="Copy", command=lambda p=path: self.copy_snippet(p)).grid(row=0, column=3, padx=2)
+            Button(row, text="Explore", command=lambda p=path: self.open_explorer(p)).grid(row=0, column=4, padx=2)
 
     def open_add_window(self):
         win = Toplevel(self)
@@ -188,6 +197,38 @@ class SnippetGUI(Tk):
         finally:
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+
+    def copy_snippet(self, path):
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+        self.clipboard_clear()
+        self.clipboard_append(text)
+
+    def open_explorer(self, path):
+        folder = os.path.dirname(os.path.abspath(path))
+        webbrowser.open(f"file://{folder}")
+
+    def open_snippet(self, path):
+        win = Toplevel(self)
+        win.title(os.path.basename(path))
+        txt = Text(win)
+        txt.pack(fill="both", expand=True)
+        with open(path, "r", encoding="utf-8") as f:
+            txt.insert("1.0", f.read())
+        btns = Frame(win)
+        btns.pack(fill="x")
+        Button(btns, text="Copy to clipboard", command=lambda: self.copy_text_widget(txt)).pack(side="left")
+        Button(btns, text="Save", command=lambda: self.save_snippet_edit(path, txt)).pack(side="left")
+        Button(btns, text="Close", command=win.destroy).pack(side="left")
+
+    def copy_text_widget(self, widget):
+        text = widget.get("1.0", END)
+        self.clipboard_clear()
+        self.clipboard_append(text)
+
+    def save_snippet_edit(self, path, widget):
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(widget.get("1.0", END))
 
 
 def main():
