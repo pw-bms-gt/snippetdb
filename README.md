@@ -3,7 +3,7 @@
 SnippetDB is a simple cross-platform code snippet manager.
 
 - Snippets are stored as plain text files under `snippets/<language>`.
-- Titles and optional descriptions are extracted from the first comment lines.
+ - Titles and optional descriptions are extracted from the first comment lines using language-specific comment symbols.
 - A SQLite database indexes snippet titles for fast searching.
 - Includes a minimal Tkinter GUI for searching and adding snippets.
 
@@ -35,10 +35,18 @@ python snippet_manager.py gui
 
 ## Snippet Format
 
-The first comment line is the title. The next comment line (optional) is the description.
+The first comment line is the title and the second (optional) line is the description. Comment prefixes depend on the language. For example, SQL snippets start lines with `--` while C# uses `//`.
 
-```bash
-# My Snippet Title
-# Optional description of the snippet
+```SQL
+-- My Snippet Title
+-- Optional description of the snippet
 SELECT * FROM table;
 ```
+
+### Supported Comment Prefixes
+
+| Language | Prefixes |
+|----------|----------|
+| SQL      | `--`     |
+| C#       | `//`     |
+| M68K     | `;`, `*` |

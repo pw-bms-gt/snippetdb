@@ -4,10 +4,31 @@ import sqlite3
 import datetime
 import webbrowser
 import tempfile
-from tkinter import Tk, Frame, Label, Entry, Listbox, Scrollbar, Button, StringVar, END, SINGLE, Toplevel, Text
+from tkinter import (
+    Tk,
+    Frame,
+    Label,
+    Entry,
+    Listbox,
+    Scrollbar,
+    Button,
+    StringVar,
+    END,
+    SINGLE,
+    Toplevel,
+    Text,
+)
 
 DB_NAME = "snippets.db"
 SNIPPETS_DIR = "snippets"
+
+# Comment prefixes used to detect titles and descriptions for each language.
+# Languages not listed here fall back to "#".
+COMMENT_PREFIXES = {
+    "SQL": ["--"],
+    "C#": ["//"],
+    "M68K": [";", "*"],
+}
 
 
 def init_db():
@@ -34,14 +55,17 @@ def ensure_language_dir(language: str) -> str:
     return path
 
 
-def parse_snippet_text(text: str):
+def parse_snippet_text(text: str, comment_markers):
+    """Extract the title and optional description from a snippet."""
+
     title = ""
     description = ""
     lines = text.splitlines()
     for i, line in enumerate(lines[:2]):
-        line = line.strip()
-        if line.startswith("#"):
-            content = line.lstrip("#").strip()
+        stripped = line.lstrip()
+        marker = next((m for m in comment_markers if stripped.startswith(m)), None)
+        if marker:
+            content = stripped[len(marker) :].lstrip()
             if i == 0:
                 title = content
             else:
@@ -54,7 +78,8 @@ def parse_snippet_text(text: str):
 def add_snippet(language: str, file_path: str):
     with open(file_path, "r", encoding="utf-8") as f:
         text = f.read()
-    title, description = parse_snippet_text(text)
+    markers = COMMENT_PREFIXES.get(language, ["#"])
+    title, description = parse_snippet_text(text, markers)
     if not title:
         raise ValueError("Snippet must start with a commented title")
     lang_dir = ensure_language_dir(language)
