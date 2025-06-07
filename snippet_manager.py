@@ -26,7 +26,12 @@ SNIPPETS_DIR = "snippets"
 COMMENT_PREFIXES = {
     "SQL": ["--"],
     "C#": ["//"],
+    "JS": ["//"],
+    "TS": ["//"],
     "M68K": [";", "*"],
+    "CMD": ["REM "],
+    "PS": ["#"],
+    "PY": ["#"],
 }
 
 
